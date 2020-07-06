@@ -1,0 +1,117 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.12'
+    }
+}
+plugins {
+    id 'java'
+    id 'application'
+    id 'idea'
+    id 'com.google.protobuf' version "0.8.8"
+    id 'org.springframework.boot' version '2.2.5.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+}
+
+group = 'vn.kamereo.hiring-test'
+version = '1.0-SNAPSHOT'
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    mainClassName = 'vn.kamereo.hiring_test.MainApplication'
+}
+
+def final GEN_DIR = "$projectDir/generated_src"
+sourceSets {
+    generated {
+        java.srcDir GEN_DIR
+    }
+}
+
+compileJava {
+    source += sourceSets.generated.java
+}
+
+dependencies {
+    implementation "io.grpc:grpc-netty:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-core:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "io.grpc:grpc-services:${grpcVersion}"
+
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
+    implementation 'com.google.guava:guava:26.0-jre'
+    implementation 'io.projectreactor:reactor-core'
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+    implementation 'org.slf4j:jcl-over-slf4j'
+    implementation 'net.logstash.logback:logstash-logback-encoder:6.3'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.springframework.boot:spring-boot-autoconfigure'
+}
+
+task deleteGeneratedSources(type: Delete) {
+    delete GEN_DIR + "/main"
+}
+
+compileJava {
+    dependsOn(processResources)
+}
+
+protobuf {
+    generatedFilesBaseDir = GEN_DIR
+
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.5.1-1"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+
+            task.plugins {
+                grpc {}
+            }
+        }
+    }
+}
+
+clean {
+    delete protobuf.generatedFilesBaseDir
+}
+
+idea {
+    module {
+        // proto files and generated Java files are automatically added as
+        // source dirs.
+        // If you have additional sources, add them here:
+        generatedSourceDirs += file(GEN_DIR + "/main/grpc")
+        generatedSourceDirs += file(GEN_DIR + "/main/java")
+
+        group = 'vn.kamereo.test'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
